@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from collections import defaultdict
 from functools import reduce
+import torch
 
 
 class Transition(object):
@@ -162,7 +163,31 @@ class ReplayMemory(object):
         self.size = 0
 
 
-def plotGraph(file1, file2, name1, name2):
+def norm_col_init(weights, std=1.0):
+    x = torch.randn(weights.size())
+    x *= std / torch.sqrt((x**2).sum(1, keepdim=True))
+    return x
+
+
+def weights_init(m):
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1:
+        weight_shape = list(m.weight.data.size())
+        fan_in = np.prod(weight_shape[1:4])
+        fan_out = np.prod(weight_shape[2:4]) * weight_shape[0]
+        w_bound = np.sqrt(6. / (fan_in + fan_out))
+        m.weight.data.uniform_(-w_bound, w_bound)
+        m.bias.data.fill_(0)
+    elif classname.find('Linear') != -1:
+        weight_shape = list(m.weight.data.size())
+        fan_in = weight_shape[1]
+        fan_out = weight_shape[0]
+        w_bound = np.sqrt(6. / (fan_in + fan_out))
+        m.weight.data.uniform_(-w_bound, w_bound)
+        m.bias.data.fill_(0)
+
+
+def plotGraph(file1, file2, name1, name2, filename):
     with open("{}.pickle".format(file1), "rb") as f:
         data1 = pickle.load(f)["reward"]
 
@@ -179,10 +204,20 @@ def plotGraph(file1, file2, name1, name2):
         x2.append(k)
         y2.append(np.mean(v))
 
+    # to get mean value in txt
+    mean_file = open("cache.txt", "a")
+    mean_file.writelines(filename + " : \n")
+    mean_file.writelines(file1 + " " + str(np.mean(y1)) + "\n")
+    mean_file.writelines(file2 + " " + str(np.mean(y2)) + "\n")
+    mean_file.writelines("\n")
+    mean_file.close()
+
     plt.plot(x1, y1)
     plt.plot(x2, y2)
     plt.xlabel("Step")
     plt.ylabel("Training Episode Returns")
     plt.grid()
     plt.legend([name1, name2])
-    plt.show()
+    plt.savefig(filename)
+    plt.close()
+    # plt.show()

@@ -153,6 +153,17 @@ class DQNAgent(Agent):
         while action_step > 0:
             action_step -= 1
             next_obs, r, done, _ = self.env.step(act)
+
+            # CartPole reward
+            # x, x_dot, theta, theta_dot = next_obs
+            # r1 = (self.env.x_threshold - abs(x)) / self.env.x_threshold - 0.8
+            # r2 = (self.env.theta_threshold_radians - abs(theta)) / self.env.theta_threshold_radians - 0.5
+            # r = r1 + r2
+
+            # MountainCar reward
+            # position, velocity = next_obs
+            # r = abs(position - (-0.5))
+
             reward += r
             if done:
                 break
